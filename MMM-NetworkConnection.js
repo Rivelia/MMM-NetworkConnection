@@ -8,101 +8,107 @@
  */
 
 Module.register('MMM-NetworkConnection', {
-
 	// Default module config.
 	defaults: {
 		updateInterval: 60 * 1000,
 		animationSpeed: 2.5 * 1000,
-    maxTime: 5 * 1000,
+		maxTime: 5 * 1000,
 		initialLoadDelay: 2.5 * 1000,
-    decimal: 1,
-    displayTextStatus: true,
-    language: config.language || 'en',
+		decimal: 1,
+		language: config.language || 'en',
 	},
 
-	getScripts: function() {
-	    return ["moment.js"];
+	getScripts: function () {
+		return ['moment.js'];
 	},
 
-  // Subclass getStyles method.
-  getStyles: function () {
-    return ['font-awesome.css'];
-  },
+	// Subclass getStyles method.
+	getStyles: function () {
+		return ['font-awesome.css'];
+	},
 
-  // Define required translations.
-	getTranslations: function() {
-    return {
-      'en': 'translations/en.json',
-      'id': 'translations/id.json'
-    };
+	// Define required translations.
+	getTranslations: function () {
+		return {
+			en: 'translations/en.json',
+			id: 'translations/id.json',
+		};
 	},
 
 	// Define start sequence.
-	start: function() {
+	start: function () {
 		Log.info('Starting module: ' + this.name);
-    var self = this;
+		var self = this;
 
-    // Set locale
+		// Set locale
 		moment.locale(self.config.language);
 
-    this.downloadSpeed = -1;
-    this.uploadSpeed = -1;
-    this.pingDelay = -1;
-    this.firstLoad = true;
+		this.downloadSpeed = -1;
+		this.uploadSpeed = -1;
+		this.pingDelay = -1;
+		this.firstLoad = true;
 
 		setTimeout(() => {
-      this.testUpdate();
-      setInterval(() => {
-        this.testUpdate();
-      }, self.config.updateInterval);
-    }, self.config.initialLoadDelay);
+			this.testUpdate();
+			setInterval(() => {
+				this.testUpdate();
+			}, self.config.updateInterval);
+		}, self.config.initialLoadDelay);
 	},
 
 	// Override dom generator.
-	getDom: function() {
-    var self = this;
+	getDom: function () {
+		var self = this;
 		var wrapper = document.createElement('div');
+		wrapper.setAttribute('style', 'width: 200px; margin: auto;');
 
-    if (self.firstLoad && self.pingDelay == -1) {
-      wrapper.className = "bright small light";
-      wrapper.innerHTML = this.translate("LOADING");
-    }
-    else {
-      self.firstLoad = false;
-      var connectionActive = this.checkConnection();
+		if (self.firstLoad && self.pingDelay == -1) {
+			wrapper.className = 'bright small light';
+			wrapper.innerHTML = this.translate('LOADING');
+		} else {
+			self.firstLoad = false;
+			var connectionActive = this.checkConnection();
 
-      if (connectionActive) {
-        wrapper.className = 'small';
-        let s = ''
-        if (self.config.displayTextStatus) {
-          s += this.translate("NETCONN_CONNECTED");
-          s += " (";
-        }
-        s += "<span class=\"fa fa-cloud\"></span> "+ (self.pingDelay > -1 ? self.pingDelay + this.translate("NETCONN_MILLISECOND") : this.translate("NETCONN_NA"));
-        s += " ";
-        s += "<span class=\"fa fa-download\"></span>"+ (self.downloadSpeed > -1 ? self.downloadSpeed + "Mbps" : this.translate("NETCONN_NA"));
-        s += " ";
-        s += "<span class=\"fa fa-upload\"></span> "+ (self.uploadSpeed > -1 ? self.uploadSpeed + "Mbps" : this.translate("NETCONN_NA"));
-        if (self.config.displayTextStatus) {
-          s += ")";
-        }
-        wrapper.innerHTML = s;
-      } else {
-        wrapper.className = 'normal bright';
-        wrapper.innerHTML = this.translate("NETCONN_NOTCONNECTED");
-      }
-    }
+			if (connectionActive) {
+				wrapper.className = 'small';
+				let s = '<table><tbody><tr>';
+				s +=
+					'<td><span class="fa fa-cloud"></span></td><td>' +
+					(self.pingDelay > -1
+						? self.pingDelay + this.translate('NETCONN_MILLISECOND')
+						: this.translate('NETCONN_NA'));
+				s += '</td></tr><tr>';
+				s +=
+					'<td><span class="fa fa-download"></span></td><td>' +
+					(self.downloadSpeed > -1
+						? self.downloadSpeed + 'Mbps'
+						: this.translate('NETCONN_NA'));
+				s += '</td></tr><tr>';
+				s +=
+					'<td><span class="fa fa-upload"></span></td><td>' +
+					(self.uploadSpeed > -1
+						? self.uploadSpeed + 'Mbps'
+						: this.translate('NETCONN_NA'));
+				s += '</td></tr></tbody></table>';
+				wrapper.innerHTML = s;
+			} else {
+				wrapper.className = 'normal bright';
+				wrapper.innerHTML = this.translate('NETCONN_NOTCONNECTED');
+			}
+		}
 
 		return wrapper;
 	},
 
-	checkConnection: function() {
+	checkConnection: function () {
 		return window.navigator.onLine;
 	},
 
-  testUpdate: function() {
-    this.sendSocketNotification('NETCONN_TEST_START', {'config':this.config});
-  },
+	testUpdate: function () {
+		this.sendSocketNotification('NETCONN_TEST_START', {
+			config: this.config,
+		});
+	},
 
 	/*testUpdate: function(delay, fn) {
 		var nextLoad = this.config.updateInterval;
@@ -116,16 +122,16 @@ Module.register('MMM-NetworkConnection', {
 		}, nextLoad);
 	},*/
 
-  socketNotificationReceived: function(notification, payload) {
-    if (notification == 'NETCONN_RESULT_DOWNLOAD') {
-      this.downloadSpeed = payload;
-    }
-    if (notification == 'NETCONN_RESULT_UPLOAD') {
-      this.uploadSpeed = payload;
-    }
-    if (notification == 'NETCONN_RESULT_PING') {
-      this.pingDelay = payload;
-    }
-    this.updateDom(this.config.animationSpeed);
-  }
+	socketNotificationReceived: function (notification, payload) {
+		if (notification == 'NETCONN_RESULT_DOWNLOAD') {
+			this.downloadSpeed = payload;
+		}
+		if (notification == 'NETCONN_RESULT_UPLOAD') {
+			this.uploadSpeed = payload;
+		}
+		if (notification == 'NETCONN_RESULT_PING') {
+			this.pingDelay = payload;
+		}
+		this.updateDom(this.config.animationSpeed);
+	},
 });
